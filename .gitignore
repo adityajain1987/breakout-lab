@@ -1,0 +1,45 @@
+# venv
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Bhavcopy raw + parquets — too large for git (~3GB), not strictly needed
+# (yfinance covers Stock Lookup; Bhavcopy is only used for delivery% header line)
+data/bhav_raw/
+data/ohlcv_bhav/
+
+# Cache files
+data/cache/
+data/raw/
+data/fetch_log.csv
+data/fetch_universe_log.csv
+
+# yfinance parquets — COMMITTED so the deployed app works.
+# Removed the previous "data/ohlcv/*.parquet" exclusion.
+
+# Reports (regenerable)
+reports/*.png
+reports/*.md
+!reports/.gitkeep
+
+# Logs
+logs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Trade journal (sensitive)
+journal.db
+
+# Streamlit
+.streamlit/secrets.toml
+.claude/
+_pending_workflows/

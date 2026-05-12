@@ -1,0 +1,14 @@
+# Bloomberg-lite theme per DESIGN.md visual tokens
+[theme]
+base = "dark"
+primaryColor = "#00d68f"
+backgroundColor = "#0a0e14"
+secondaryBackgroundColor = "#11161d"
+textColor = "#e6edf3"
+font = "sans serif"
+
+[server]
+runOnSave = true
+
+[browser]
+gatherUsageStats = false

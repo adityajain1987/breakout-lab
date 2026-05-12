@@ -1,0 +1,7 @@
+ticker,rows,status,note
+^NSEI,2299,ok,Nifty 50
+RELIANCE.NS,2304,ok,blue-chip baseline
+NESTLEIND.NS,2304,ok,1:10 split 2024-01 — verify auto-adjust
+KOTAKBANK.NS,2304,ok,split history — financials
+MAZDOCK.NS,1373,ok,multi-bagger — breakout test
+GROWW.NS,115,ok,recent IPO — partial history

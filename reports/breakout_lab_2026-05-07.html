@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Breakout Lab — 2026-05-07</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #0a0e14; color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0; padding: 24px; line-height: 1.5;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1, h2, h3, h4 { color: #e6edf3; margin-top: 0; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; border-bottom: 1px solid #1f2630; padding-bottom: 8px; }
+  .muted { color: #8b949e; font-size: 13px; }
+  .header-strip {
+    background: #11161d; border: 1px solid #1f2630;
+    border-radius: 4px; padding: 16px 20px; margin-bottom: 24px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  }
+  .header-strip .stats { display: flex; gap: 32px; }
+  .header-strip .stat { font-size: 14px; }
+  .header-strip .stat strong { display: block; font-size: 22px; color: #00d68f; font-family: monospace; }
+  table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 13px; }
+  table th, table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #1f2630; }
+  table th { color: #8b949e; font-weight: bold; background: #11161d; }
+  table tr:hover { background: #11161d; }
+  .breakouts-table td:nth-child(4), .breakouts-table td:nth-child(5),
+  .breakouts-table td:nth-child(7), .breakouts-table td:nth-child(8),
+  .breakouts-table td:nth-child(12) { text-align: right; }
+
+  .featured-stock {
+    background: #11161d; border: 1px solid #1f2630;
+    border-radius: 6px; padding: 20px; margin: 24px 0;
+  }
+  .featured-header {
+    display: flex; align-items: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .featured-ticker h2 { margin: 0; font-size: 24px; border: none; padding: 0; }
+  .featured-price .ltp { font-size: 22px; font-family: monospace; font-weight: bold; }
+  .featured-price .chg { font-size: 16px; font-family: monospace; }
+  .featured-score { font-size: 56px; font-weight: bold; font-family: monospace; margin-left: auto; }
+  .featured-meta { margin: 16px 0; }
+  .meta-row { margin: 4px 0; font-family: monospace; font-size: 13px; }
+
+  .honest-label {
+    background: #11161d; border: 2px solid #ffaa00;
+    border-radius: 4px; padding: 10px 14px; margin: 12px 0;
+    font-size: 13px; color: #e6edf3;
+  }
+
+  .deals-table { margin-top: 16px; }
+  .deals-table h4 { margin: 8px 0; font-size: 14px; }
+  .deals-table table { font-size: 12px; }
+
+  .disclaimer {
+    background: #11161d; border: 1px solid #1f2630;
+    border-radius: 4px; padding: 16px; margin: 32px 0 0; font-size: 13px; color: #8b949e;
+  }
+  .disclaimer strong { color: #ffaa00; }
+
+  /* How-to-read expandable section */
+  details.how-to-read {
+    background: #11161d; border: 1px solid #ffaa00;
+    border-radius: 6px; padding: 12px 18px; margin: 16px 0 24px;
+  }
+  details.how-to-read summary {
+    cursor: pointer; color: #ffaa00; font-weight: bold; font-size: 15px;
+    padding: 4px 0; user-select: none;
+  }
+  details.how-to-read summary:hover { opacity: 0.85; }
+  .how-to-content { margin-top: 14px; padding-top: 12px; border-top: 1px solid #1f2630;
+                     color: #e6edf3; font-size: 14px; }
+  .how-to-content h3 { font-size: 16px; color: #00d68f; margin: 16px 0 8px; }
+  .how-to-content ul, .how-to-content ol { padding-left: 22px; line-height: 1.7; }
+  .how-to-content li { margin: 6px 0; }
+  .how-to-content p { line-height: 1.6; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header-strip">
+    <div>
+      <h1 style="margin:0;">📈 Breakout Lab</h1>
+      <div class="muted">Daily research notes for personal use · 2026-05-07</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="muted">Universe</span><strong>503</strong></div>
+      <div class="stat"><span class="muted">Scanned</span><strong>499</strong></div>
+      <div class="stat"><span class="muted">Qualified</span><strong>25</strong></div>
+      <div class="stat"><span class="muted">Featured</span><strong>5</strong></div>
+    </div>
+  </div>
+
+  <details class="how-to-read" open>
+    <summary>📖 How to read this report (click to collapse)</summary>
+    <div class="how-to-content">
+      <h3>The breakouts table — what each column means</h3>
+      <ul>
+        <li><strong>Levels (H S C D)</strong> — which type of resistance broke today.
+          <strong>H</strong> = High-Volume Node (where shares accumulated historically).
+          <strong>S</strong> = 20-day swing high (recent peak).
+          <strong>C</strong> = 52-week cycle high (yearly peak).
+          <strong>D</strong> = <em>20-year decadal high</em> — rare and structurally significant (think BHEL's
+          May 2026 break of its 2008 peak after 18 years). When you see D, that's a real generational move.
+          More letters = stronger signal.</li>
+        <li><strong>Lvl ₹</strong> — the actual price level that broke.</li>
+        <li><strong>Vol×</strong> — today's volume / 20-day average. <strong>2.0× = double normal volume</strong>; higher = more conviction.</li>
+        <li><strong>CIR%</strong> — "Close-In-Range" — where today's close was in the day's high-low range.
+          <strong>100% = closed at day's high (very strong)</strong>; 50% = middle; 0% = weak.</li>
+        <li><strong>50d / 200d</strong> — ✓ = stock above its 50-day / 200-day moving average (uptrend); ✗ = below (downtrend).</li>
+        <li><strong>Score</strong> — composite 0-100 combining all of the above. <span style="color:#00d68f">≥70 strong</span>, <span style="color:#ffaa00">30-69 moderate</span>.</li>
+      </ul>
+
+      <h3>The featured stock cards — three things to read</h3>
+      <ol>
+        <li><strong>The price chart (left)</strong> shows recent action. The horizontal lines are POC (orange = where most volume traded), VAH/VAL (green dashed = the 70%-volume range around POC). When price breaks above POC, often runs further; when it falls below, often retests POC as new resistance.</li>
+        <li><strong>The volume profile (right)</strong> is a sideways histogram of WHERE shares traded. Long green bars = areas where lots of shares changed hands = likely future support/resistance.</li>
+        <li><strong>The yellow "Disclosed" banner</strong> is the honest deals label. We only count the trades NSE publicly disclosed (bulk + block deals > size threshold). Most of every stock's volume is anonymous — no one knows who bought it. Anyone claiming to know per-stock FII flow is making it up.</li>
+      </ol>
+
+      <h3>What this report is NOT</h3>
+      <p>It's <strong>NOT a buy list</strong>. The composite score tells you "this setup historically hit X% of the time on past data" — useful as research context, NOT a recommendation. The auto-execution version of this strategy was <strong>backtested and FAILED</strong> the gate (EV per trade -0.059R on unseen 2025-2026 data). Use this as one data point among many for your own decisions.</p>
+
+      <p><em>Filters used to generate this scan: min score 30, min volume 1.5×, above 50-DMA only, Nifty 500 universe (~500 large/mid-cap NSE stocks).</em></p>
+    </div>
+  </details>
+
+  <h2>🔍 Today's qualified breakouts</h2>
+  <p class="muted">Filters: min score 30 · min volume 1.5× · above 50-DMA · Nifty 500 universe ·
+     <span style="color:#ffaa00">Don't know what these columns mean? Click "How to read this report" above ☝️</span></p>
+  <table class='breakouts-table'><thead><tr><th>#</th><th>Ticker</th><th>Sector</th><th>LTP</th><th>Chg%</th><th>Levels</th><th>Lvl ₹</th><th>Vol×</th><th>CIR%</th><th>50d</th><th>200d</th><th>Score</th></tr></thead><tbody><tr><td>1</td><td><strong>ENDURANCE</strong></td><td class='muted'>Automobile and Auto Components</td><td>₹2,536.20</td><td style='color:#00d68f'>+7.73%</td><td>H S</td><td>2477</td><td>5.7×</td><td>73%</td><td style='color:#00d68f'>✓</td><td style='color:#ff3d71'>✗</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>2</td><td><strong>PAYTM</strong></td><td class='muted'>Financial Services</td><td>₹1,197.40</td><td style='color:#00d68f'>+7.82%</td><td>H S</td><td>1181</td><td>4.7×</td><td>91%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>3</td><td><strong>AEGISVOPAK</strong></td><td class='muted'>Oil Gas & Consumable Fuels</td><td>₹216.12</td><td style='color:#00d68f'>+7.49%</td><td>H S</td><td>216</td><td>8.2×</td><td>75%</td><td style='color:#00d68f'>✓</td><td style='color:#ff3d71'>✗</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>4</td><td><strong>JAINREC</strong></td><td class='muted'>Metals & Mining</td><td>₹504.20</td><td style='color:#00d68f'>+9.08%</td><td>S C</td><td>482</td><td>4.4×</td><td>81%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>5</td><td><strong>BHARATFORG</strong></td><td class='muted'>Automobile and Auto Components</td><td>₹1,992.90</td><td style='color:#00d68f'>+6.36%</td><td>H S C</td><td>1950</td><td>5.6×</td><td>80%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>6</td><td><strong>PPLPHARMA</strong></td><td class='muted'>Healthcare</td><td>₹183.73</td><td style='color:#00d68f'>+11.22%</td><td>H S</td><td>172</td><td>8.0×</td><td>59%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>7</td><td><strong>CGPOWER</strong></td><td class='muted'>Capital Goods</td><td>₹859.10</td><td style='color:#00d68f'>+3.64%</td><td>S C</td><td>847</td><td>3.7×</td><td>69%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>8</td><td><strong>CRAFTSMAN</strong></td><td class='muted'>Automobile and Auto Components</td><td>₹8,637.00</td><td style='color:#00d68f'>+11.09%</td><td>S C</td><td>8220</td><td>58.3×</td><td>87%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>100</td></tr><tr><td>9</td><td><strong>BAJAJ-AUTO</strong></td><td class='muted'>Automobile and Auto Components</td><td>₹10,605.00</td><td style='color:#00d68f'>+2.77%</td><td>S C</td><td>10478</td><td>3.5×</td><td>68%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>97</td></tr><tr><td>10</td><td><strong>TEJASNET</strong></td><td class='muted'>Telecommunication</td><td>₹533.40</td><td style='color:#00d68f'>+15.16%</td><td>H</td><td>488</td><td>11.0×</td><td>75%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f; font-weight:bold'>80</td></tr><tr><td>11</td><td><strong>GODREJIND</strong></td><td class='muted'>Diversified</td><td>₹1,226.85</td><td style='color:#00d68f'>+20.00%</td><td>S</td><td>1043</td><td>9.4×</td><td>100%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#ffaa00; font-weight:bold'>60</td></tr><tr><td>12</td><td><strong>POLYCAB</strong></td><td class='muted'>Capital Goods</td><td>₹9,003.00</td><td style='color:#00d68f'>+6.98%</td><td>C</td><td>8722</td><td>3.8×</td><td>92%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#ffaa00; font-weight:bold'>57</td></tr><tr><td>13</td><td><strong>EXIDEIND</strong></td><td class='muted'>Automobile and Auto Components</td><td>₹364.45</td><td style='color:#00d68f'>+3.63%</td><td>H</td><td>364</td><td>2.6×</td><td>95%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#ffaa00; font-weight:bold'>51</td></tr><tr><td>14</td><td><strong>RRKABEL</strong></td><td class='muted'>Capital Goods</td><td>₹1,927.00</td><td style='color:#00d68f'>+7.22%</td><td>S C</td><td>1835</td><td>1.7×</td><td>79%</td><td style='color:#00d68f'>✓</td><td style='color:#00d68f'>✓</td><td style='color:#ffaa00; font-weight:bold'>51</td></tr><tr><td>15</td><td><strong>ABLBL</strong></td><td class='muted'>Consumer Services</td><td>₹118.21</td><td style='color:#00d68f'>+9.86%</td><td>S</td><td>111</td><td>25.5×</td><td>86%</td><td style='color:#00d68f'>✓</td><td style='color:#ff3d71'>✗</td><td style='color:#ffaa00; font-weight:bold'>51</td></tr></tbody></table>
+
+  <h2 style="margin-top: 40px;">⭐ Featured (top 5 by score)</h2>
+  <div class='card'>No bar for ENDURANCE on 2026-05-07</div><div class='card'>No bar for PAYTM on 2026-05-07</div><div class='card'>No bar for AEGISVOPAK on 2026-05-07</div><div class='card'>No bar for JAINREC on 2026-05-07</div><div class='card'>No bar for BHARATFORG on 2026-05-07</div>
+
+  <div class="disclaimer">
+    <p><strong>READ THIS BEFORE ACTING ON ANYTHING IN THIS REPORT.</strong></p>
+    <p>This is a personal-use research document. It is <strong>NOT</strong> a buy/sell signal,
+    investment advice, or a recommendation to act. The composite breakout score is a
+    descriptive backtest statistic — it tells you "this setup has historically hit X% of the
+    time" — not what to do.</p>
+    <p>This tool is <strong>NOT</strong> registered as a SEBI Research Analyst service.
+    The author makes no claim of edge or predictive accuracy. The breakout-as-trigger
+    auto-execution version of this strategy was tested and <strong>FAILED the holdout gate</strong>
+    (EV per trade -0.059R on 2025-2026 unseen data). Use as research context for your own
+    decisions only. Past performance is not predictive.</p>
+    <p><strong>Honest data note:</strong> All prices are split + dividend adjusted (yfinance
+    auto_adjust=True). Today's price matches NSE quote; historical prices have been back-adjusted
+    and may look lower than non-adjusted charts. The "remaining X% of volume is anonymous"
+    label on each deals panel is non-negotiable — NSE does not publish per-stock FII flow at
+    retail level, and we will never invent numbers we cannot see.</p>
+    <p class="muted" style="margin-top: 12px;">Generated 2026-05-08 16:30:46 ·
+    Breakout Lab v1 · github.com/aditya/breakout-lab (private)</p>
+  </div>
+
+</div>
+</body>
+</html>

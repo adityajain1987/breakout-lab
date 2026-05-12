@@ -1,0 +1,6 @@
+ticker,yf_rows,bhav_rows,overlap_days,overlap_start,overlap_end,close_mean_abs_diff_pct,close_max_abs_diff_pct,n_close_diffs_above_1pct,n_close_diffs_above_5pct,vol_mean_abs_diff_pct,n_vol_diffs_above_5pct,yf_today_close,bhav_today_close
+RELIANCE,2304,1563,1563,2020-01-01,2026-04-30,40.8039,55.26,1191,1191,85.78,1193,1430.8,1430.8
+NESTLEIND,2304,1563,1563,2020-01-01,2026-04-30,73.3035,95.33,1386,1386,1232.2,1386,1458.6,1458.6
+KOTAKBANK,2304,1563,1563,2020-01-01,2026-04-30,76.4702,80.42,1493,1493,381.79,1493,383.3,383.3
+MAZDOCK,1373,1369,1369,2020-10-12,2026-04-30,39.5754,54.71,1039,1038,75.9,1040,2733.2,2733.2
+SYNGENE,2304,1563,1563,2020-01-01,2026-04-30,0.4538,1.31,1,0,0.08,2,467.65,467.65
