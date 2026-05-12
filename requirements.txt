@@ -1,26 +1,19 @@
-# Breakout Lab — Python dependencies
-# Pinned to match momentum-dashboard so OHLCV cache is interchangeable
+# Breakout Lab — runtime dependencies for public deployment (Streamlit Cloud)
+# Dev-only deps (pytest, jupyterlab) live in requirements-dev.txt and are NOT installed here.
 
-# Data fetching
-yfinance==1.3.0           # OHLCV from Yahoo Finance (.NS suffix for NSE tickers)
-curl_cffi==0.15.0         # browser impersonation — bypasses Yahoo bot detection (required by yfinance 1.x)
-requests==2.32.3          # HTTP for Bhavcopy + NSE bulk/block deals API
-urllib3==2.2.3            # required by requests
+# Data fetching — yfinance 0.2.x avoids the curl_cffi native-build hang on Streamlit Cloud
+yfinance>=0.2.50,<1.0
+requests>=2.32.0
+urllib3>=2.2.0
 
 # Data manipulation
-pandas==2.2.3             # DataFrame core
-numpy==2.1.3              # numerical
-pyarrow==18.0.0           # parquet I/O for OHLCV cache
+pandas>=2.2.0,<3.0
+numpy>=2.0.0,<3.0
+pyarrow>=18.0.0
 
-# Plotting + reports
-matplotlib==3.9.2         # equity curve PNGs + volume profile previews
+# Plotting
+matplotlib>=3.9.0
+plotly>=6.0.0
 
-# UI (Phase 4)
-streamlit==1.40.1         # dashboard MVP
-plotly==6.7.0             # interactive candlestick + horizontal-bar volume profile
-
-# Quality
-pytest==8.3.3             # unit tests for analytics modules
-
-# Notebooks (optional — exploration only)
-jupyterlab==4.3.1         # ad-hoc analysis
+# Streamlit
+streamlit>=1.40.0
