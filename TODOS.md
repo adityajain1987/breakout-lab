@@ -2,7 +2,35 @@
 
 **Purpose:** Priority-tagged todos. P0 = blocking next phase gate. P1 = important but not blocking. P2 = nice-to-have / future.
 **Read alongside:** `CLAUDE.md`, `STATUS.md`, `DESIGN.md`, `docs/Phase1_OfficeHours.md`
-**Last updated:** 2026-05-01
+**Last updated:** 2026-05-16
+
+---
+
+## Operations — Daily refresh recovery ✅ SHIPPED 2026-05-16
+
+### ~~OPS.1 — Make Bhavcopy build incremental~~ ✅ SHIPPED 2026-05-16
+**What broke:** May 11 refresh hit "Too many open files" mid-Bhavcopy build → quarantine + publish failed → launchd throttled (exit 78) → May 12-15 never ran → live URL stuck at 2026-05-08 for 8 days.
+**What landed:** `data/build_bhavcopy_parquets.py` `build()` rewritten to incremental-by-default. Reads newest existing parquet mtime, processes only newer raw CSVs, appends + dedupes per-ticker. New runtime: 39.4s for 5 trading days × 2,452 tickers (was ~6,718s). FD usage stays well under macOS 256 limit. `--full` flag preserved for forced rebuild.
+**Verification:** end-to-end manual catch-up (6/6 steps OK), live URL serves 2026-05-15 confirmed via cache-busted curl. launchd reloaded — next scheduled run Mon May 18 4:30 PM IST.
+
+---
+
+## Phase 7 — Decade Breakouts ✅ SHIPPED 2026-05-13
+
+### ~~P7.1 — Decade-breakout analytics module + tests~~ ✅ SHIPPED 2026-05-13
+**What landed:** `analytics/decade_breakouts.py` (pure function + `DecadeBreakoutState` dataclass) + `analytics/test_decade_breakouts.py` (14/14 passing). Definition: `H_old = max(intraday High) > 10y ago`, `H_recent = max(High) in last 10y excluding today`, eligible iff `H_recent < H_old` AND `close ≥ H_old × (1 − proximity_pct/100)`. Status flags: "Approaching" (close < H_old) and "Broke today" (close ≥ H_old, first time in 10+ years).
+
+### ~~P7.2 — Universe scan + Streamlit page~~ ✅ SHIPPED 2026-05-13
+**What landed:** `analytics/scan_decade_breakouts.py` (CLI + `DecadeBreakoutScanResult` NamedTuple) + `dashboard/pages/7_🚀_Decade_Breakouts.py`. Sliders for proximity_pct (0.5-50%), lookback_years (5-20), min_history_years, sector multi-select. Click-through to Stock Lookup. Sort: "Broke today" first, then closest-gap "Approaching". Real-data hits at 10% proximity: SAIL (8.4% gap, 18.4y untouched since Dec 2007), GMRAIRPORT, J&KBANK, DLF, BAJAJFINSV, UNIONBANK — classic 2007-2010 bubble names. Full scan ~1 sec.
+
+### ~~P7.3 — Daily refresh integration~~ ✅ SHIPPED 2026-05-13
+**What landed:** `step_decade_breakouts_scan()` added to `daily_refresh.py`, runs after quarantine sweep. Two passes (2% strict + 10% wide); persists `data/decade_breakouts_latest.parquet`. Failure visible in daily summary.
+
+### P7.future — Click-through chart overlay (DEFERRED — nice-to-have)
+**What's missing:** when you click a row in Page 7, it jumps to Stock Lookup but does not draw a horizontal line at `H_old` on the chart. Same pattern as the existing `show_range_bands` session-state flag for the Range Scanner — add `show_decade_high` flag + render H_old via `add_hline()`. Estimate ~20 min.
+
+### P7.future — Backtest the decade-breakout setup (DEFERRED)
+**Why:** Phase 7 currently makes no claim about whether trading these has historical edge — the page disclaimer is explicit about this. A small backtest (entry: close ≥ H_old after ≥ 10y untouched; exit: 1R stop / 2R-3R target / time stop 60-90 days) on the 2014-2023 universe would tell us whether the setup deserves more than research-context framing. Same holdout discipline as Phase 3.
 
 ---
 

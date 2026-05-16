@@ -2,13 +2,17 @@
 
 **Purpose:** Current phase, decision log, blockers, reverse-chronological progress. The single source of truth for "where are we?"
 **Read alongside:** `CLAUDE.md`, `TODOS.md`, `DESIGN.md`
-**Last updated:** 2026-05-01
+**Last updated:** 2026-05-16
 
 ---
 
 ## CURRENT PHASE
 
-**Phase 6 — Range Scanner ✅ SHIPPED 2026-05-12.** Sixth dashboard page added: horizontal-range scanner (rectangle pattern detection) on the Nifty 500 universe. Companion to "Breakouts Today" — same data, opposite lens. Detects ranges lasting ≥9 months via fractal swing pivots + ATR-tolerance clustering + volume-profile cross-check (Option G). 4-rank additive star scoring (structure / volume / time-spread / role-reversal) + 💰 round-number icon. Stock Lookup extended with shaded R/S band overlay via Plotly `add_hrect()`. 143/143 tests passing (91 baseline + 39 range_detector + 13 scan_ranges). Real-data sanity confirmed: Mahindra detected as 22-month Established range matching the user's reference chart. Full scan of 499 tickers completes in ~6.7s (well under 30s soft warning).
+**Health check + incremental Bhavcopy build ✅ SHIPPED 2026-05-16.** Live URL had stuck at asof 2026-05-08 for 8 days. Root cause: May 11 daily refresh hit macOS "Too many open files" because Bhavcopy build was rebuilding ALL 3,131 parquets every day (1.87 hours, 1,571 file handles open simultaneously). The OOM cascade broke Quarantine + Publish in the same run, then launchd throttled the job (exit code 78 EX_CONFIG) so May 12-15 never even attempted. **Fix:** made `data/build_bhavcopy_parquets.py` incremental — only re-process raw CSVs newer than the most recent parquet, and for each affected ticker append-to-existing + dedupe instead of full rebuild. New build time: **39 seconds** for 5 new days × 2,452 tickers (vs 6,718s before, 170× faster). Reloaded launchd (`unload + load`) to clear the throttle. Manual catch-up refresh completed cleanly: 6/6 steps OK, live URL now serves 2026-05-15. System is healthy; next launchd fire is Mon May 18 4:30 PM IST.
+
+**Previous milestone: Phase 7 — Decade Breakouts ✅ SHIPPED 2026-05-13.** Seventh dashboard page added: pre-breakout watchlist for stocks approaching a >10-year-old high that has been strictly untouched (not even intraday) for the entire lookback window. User asked for a screen that "pops" when a stock comes within 1-2% of an untouched decade-old peak. Tested against real Nifty 500 cache: at 10% proximity, finds SAIL (₹185 today vs ₹202 peak set Dec 2007, 18.4 years untouched), GMRAIRPORT, J&KBANK, DLF, BAJAJFINSV, UNIONBANK — exactly the 2007-2010 bubble names that never reclaimed their peaks. Full scan of 499 tickers in ~1 second. Wired into `daily_refresh.py` so the parquet cache + Streamlit page stay current after each market close. 14 new unit tests, all passing.
+
+**Previous milestone: Phase 6 — Range Scanner ✅ SHIPPED 2026-05-12.** Sixth dashboard page added: horizontal-range scanner (rectangle pattern detection) on the Nifty 500 universe. Companion to "Breakouts Today" — same data, opposite lens. Detects ranges lasting ≥9 months via fractal swing pivots + ATR-tolerance clustering + volume-profile cross-check (Option G). 4-rank additive star scoring (structure / volume / time-spread / role-reversal) + 💰 round-number icon. Stock Lookup extended with shaded R/S band overlay via Plotly `add_hrect()`. 143/143 tests passing (91 baseline + 39 range_detector + 13 scan_ranges). Real-data sanity confirmed: Mahindra detected as 22-month Established range matching the user's reference chart. Full scan of 499 tickers completes in ~6.7s (well under 30s soft warning).
 
 **Previous milestone: SHIP-READY for Amit (Phase 4 complete 2026-05-03).** Phase 1 data layer ✅. Phase 3 backtest engine ✅ (TRAIN gate cleared by V_combo +0.299R, holdout opened, failed at -0.059R, regime-filter closure test confirmed kill at -0.097R). Phase 4 dashboard ✅ (5 pages: Stock Lookup, Breakouts Today, Backtest Playground, Glossary, Watchlist). Polish complete: click-through Breakouts→Lookup, watchlist with notes + persistence, daily refresh launchd job (Mon-Fri 4:30 PM IST), `setup.sh` one-shot installer for Amit's machine, TradingView audit doc with Bhavcopy data integrity confirmed.
 
@@ -29,6 +33,53 @@ None. Ready for Phase 1.
 ---
 
 ## Decision log (reverse chronological)
+
+### 2026-05-16 — Daily-refresh recovery: incremental Bhavcopy build
+- **Symptom:** Amit's URL (https://adityajain1987.github.io/breakout-lab-share/) hadn't updated since 2026-05-08 — 8 calendar days, 5 trading days behind.
+- **Forensics on `/tmp/com.breakoutlab.refresh.err.log` and the previous refresh logs:**
+  - May 11 16:30 run: `OSError: [Errno 24] Too many open files` during Bhavcopy build, then `sqlite3.OperationalError: unable to open database file` from quarantine, then `git push` failed because GitHub Pages branch was behind (the fix-with-rebase from earlier sessions was already in place — this push failure was downstream of the file-handle exhaustion, not the original GH lock issue).
+  - May 12-15: launchd exited 78 EX_CONFIG = throttled (Apple's "too many failures, back off" response). The job *never ran* on those four days. `launchctl list | grep breakoutlab` showed last exit code 78.
+- **Root cause:** `data/build_bhavcopy_parquets.py` was unconditionally rebuilding every parquet in `data/ohlcv_bhav/` from scratch on every run. With 3,131 tickers × 1,571 raw CSVs each day, the per-process FD count blew past `ulimit -n` (256 on macOS default).
+- **Fix in code (one file):** `build()` now reads the mtime of the newest existing parquet, filters `all_csvs` to those modified after that timestamp, and for each ticker with new data: reads the existing parquet → concatenates with the new slice → drops duplicate dates → writes back. Adds `--full` flag for forced rebuild. Default behavior is incremental.
+- **Fix in launchd:** `launchctl unload + load` of `~/Library/LaunchAgents/com.breakoutlab.refresh.plist` to clear the throttle.
+- **End-to-end verification (this session):**
+  - Bhavcopy: fetched 5 new days (May 11-15) + processed 2,452 affected tickers in **39.4s** (vs ~6,718s historical baseline → **170× speedup**)
+  - Quarantine sweep: 9.6s, 335 tickers flagged (consistent with last clean run)
+  - Decade-breakouts scan: 9.0s, 1 hit at 10% proximity (SAIL — same as 05-08, no regression)
+  - Publish: 25.2s, `git pull --rebase --autostash` + push succeeded
+  - Direct curl on the live URL (cache-busted) returns `<title>Breakout Lab — 2026-05-15</title>` — confirmed fresh.
+- **Why this won't recur:** the incremental path opens at most ~2,500 parquets on a normal trading-day refresh (only the tickers that traded), never the full 3,131. FD usage stays well under the 256 default limit.
+- **Files modified:** `data/build_bhavcopy_parquets.py` (the only code change). No schema changes; existing parquets and downstream readers are untouched.
+
+### 2026-05-13 — Phase 7 Decade Breakouts: shipped end-to-end
+- **Origin:** user asked for a Nifty 500 screen that finds stocks where "the high was 100 ten years ago, has stayed in the 70-80 range the whole time without touching 100 even intraday, and is now coming back to within 1-2% of that level — alert me before the break, not after."
+- **Push-back:** flagged this as Phase 7 of Breakout Lab rather than a new project — same universe, same parquet cache (3,128 tickers, 21y backfill via yfinance), same Streamlit shell, same end user (Amit). User confirmed.
+- **Spec lock-in:**
+  - `H_old` = max(intraday High) over bars strictly older than (asof − 10 years)
+  - `H_recent` = max(intraday High) in last 10 years, excluding today's bar (so a breakout doesn't disqualify itself)
+  - Eligible iff `H_recent < H_old` AND `close ≥ H_old × (1 − proximity_pct/100)`
+  - Status: "Approaching" if close < H_old, "Broke today" if close ≥ H_old
+  - All parameters configurable in UI; defaults match the user's words (`lookback_years=10`, `proximity_pct=2.0`, `min_history_years=11`)
+- **Why intraday High, not Close.** User said "not once intraday or any way" — using daily High catches even single-wick touches that a close-based check would miss. This is the stricter (correct) reading.
+- **Why min_history_years=11, not 10.** With exactly 10 years of data and the peak set on day 1, "strictly older than the cutoff" eliminates the peak entirely. The 1-year buffer guarantees there's a meaningful "old window" to find a peak in.
+- **Why yfinance adjusted prices.** Splits and bonuses would otherwise fake a "breakdown" — Reliance's 2005 raw price of ₹500+ shows as ₹32 in adjusted form, correctly comparable to today's ₹1435.
+- **Output sort.** "Broke today" first (lexically `B > A`), then closest-gap "Approaching" — surfaces today's breakouts ahead of upcoming candidates.
+- **Files added:**
+  - `analytics/decade_breakouts.py` — pure function + `DecadeBreakoutState` dataclass
+  - `analytics/test_decade_breakouts.py` — 14 tests (synthetic shapes + real-data smoke)
+  - `analytics/scan_decade_breakouts.py` — universe scan + CLI + `DecadeBreakoutScanResult` NamedTuple
+  - `dashboard/pages/7_🚀_Decade_Breakouts.py` — Streamlit page with proximity / lookback / sector sliders
+- **Files modified:**
+  - `daily_refresh.py` — added `step_decade_breakouts_scan()`, runs after quarantine sweep; persists `data/decade_breakouts_latest.parquet`. Two passes (2% + 10% proximity) so the summary log shows both the strict + loose counts. Step failure is visible in the daily refresh summary.
+- **Real-data sanity (asof 2026-05-08, proximity loosened progressively):**
+  - 2% proximity: 0 hits today — expected; most 2010-era decade-base setups already broke out in 2023-24
+  - 10% proximity: 1 hit — SAIL ₹185 vs ₹202 (Dec 2007 peak, 18.4y untouched, 8.4% gap)
+  - 25% proximity: +GMRAIRPORT, +J&KBANK
+  - 50% proximity: +IFCI, +DLF, +BAJAJFINSV, +UNIONBANK
+  - These are exactly the 2007-2010 bubble-era names that never reclaimed their peaks — the screen is correctly identifying the right shape of stock.
+- **Performance:** 1-2 seconds for the full 499-ticker scan (no heavy operations — just `max(high)` on each parquet). No soft warning hit.
+- **Numbers:** 157 of 499 tickers scanned have ≥11 years of history (Nifty 500 has many newer listings — IPOs since 2015, demergers). 283 of those touched their old high in the last 10 years (the 2023-24 rally consumed most decade-bases). That leaves 19 with a clean untouched high but currently >2% away.
+- **Tests:** 14/14 passing. Existing 143 tests still pass (no shared code modified).
 
 ### 2026-05-12 — Phase 6 chart-UX round: clean lines, touch markers, auto-expand, plain English
 **Round trigger:** First real-user feedback (Aditya looking at Mahindra in the dashboard) flagged 3 problems:

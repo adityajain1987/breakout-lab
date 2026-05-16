@@ -113,6 +113,46 @@ def step_quarantine_sweep() -> dict:
     return {**s1, "fno_expiry_emitted": s2.get("n_emitted", 0), "fno_expiry_inserted": s2["n_inserted"]}
 
 
+def step_decade_breakouts_scan() -> dict:
+    """
+    Scan Nifty 500 for stocks approaching a >10y-old untouched high. Persists the
+    full eligible list to data/decade_breakouts_latest.parquet so the Streamlit page
+    has a fast path AND so a failure here is visible in the daily summary.
+
+    Two passes:
+      - 2% proximity (the user's default alert window)
+      - 10% proximity (wider — populates the watchlist when 2% is empty)
+    """
+    from analytics.scan_decade_breakouts import scan_decade_breakouts
+
+    # Use the latest bar in NSEI as the asof — same convention as the share page.
+    import pandas as pd
+    nsei = ROOT / "data" / "ohlcv" / "_NSEI.parquet"
+    asof = pd.read_parquet(nsei).index[-1]
+
+    out_path = ROOT / "data" / "decade_breakouts_latest.parquet"
+    summary: dict = {"asof": str(asof.date())}
+
+    for pct in (2.0, 10.0):
+        result = scan_decade_breakouts(
+            asof_date=asof, proximity_pct=pct,
+            lookback_years=10, min_history_years=11, top_n=500,
+        )
+        summary[f"eligible_at_{int(pct)}pct"] = result.n_eligible
+        if pct == 10.0:
+            # Persist the wider list — the Streamlit page filters in-memory anyway.
+            df = result.df.copy()
+            if not df.empty:
+                df["asof"] = str(asof.date())
+                df.to_parquet(out_path, compression="snappy")
+            elif out_path.exists():
+                out_path.unlink()   # nothing to show today
+
+    summary["n_scanned"] = result.n_scanned
+    summary["scan_duration_seconds"] = round(result.scan_duration_seconds, 1)
+    return summary
+
+
 def step_publish_to_github_pages() -> dict:
     """Generate fresh HTML report + push to GitHub Pages so the public URL updates.
 
@@ -217,6 +257,7 @@ def main() -> None:
             results.append(run_step("OHLCV fetch (yfinance)", step_ohlcv_fetch, fh))
         results.append(run_step("Bhavcopy refresh (NSE official)", step_bhavcopy_refresh, fh))
         results.append(run_step("Quarantine sweep", step_quarantine_sweep, fh))
+        results.append(run_step("Decade-breakouts scan", step_decade_breakouts_scan, fh))
         if not args.no_publish:
             results.append(run_step("Publish to GitHub Pages", step_publish_to_github_pages, fh))
 
